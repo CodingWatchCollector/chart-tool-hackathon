@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Data Visualization Tool</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Data Visualization Tool</h1>
+      <label for="theme-toggle">
+        <svg
+          aria-hidden="true"
+          xmlns="http://www.w3.org/2000/svg"
+          height="24px"
+          viewBox="0 0 24 24"
+          width="24px"
+          fill="currentColor"
+        >
+          <path d="M0 0h24v24H0V0z" fill="none" />
+          <path
+            d="M20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69zm-2 5.79V18h-3.52L12 20.48 9.52 18H6v-3.52L3.52 12 6 9.52V6h3.52L12 3.52 14.48 6H18v3.52L20.48 12 18 14.48zM12 6.5v11c3.03 0 5.5-2.47 5.5-5.5S15.03 6.5 12 6.5z"
+          />
+        </svg>
+        Toggle dark mode</label
+      >
+      <input type="checkbox" id="theme-toggle" />
+    </header>
+
+    <main>
+      <section id="upload-section">
+        <h2>Upload your data</h2>
+        <div id="upload-area" role="button" aria-label="File Drag & Drop Area">
+          Drag & Drop your files here or
+          <input
+            type="file"
+            id="file-input"
+            aria-label="Choose File"
+            accept=".csv, .xlsx, .json"
+          />
+        </div>
+        <textarea
+          id="manual-input"
+          placeholder="Or paste your data here (CSV, JSON)"
+        ></textarea>
+        <button id="preview-btn" aria-label="Preview Data">Preview Data</button>
+      </section>
+
+      <section id="visualization-section">
+        <div id="chart-controls">
+          <label for="chart-type">Select Chart Type</label>
+          <select id="chart-type">
+            <option value="line">Line Chart</option>
+            <option value="bar">Bar Chart</option>
+            <option value="pie">Pie Chart</option>
+          </select>
+          <button id="generate-btn" aria-label="Generate Chart">
+            Generate Chart
+          </button>
+        </div>
+
+        <div id="chart-area" aria-live="polite">
+          <!-- SVG chart will be rendered here -->
+        </div>
+
+        <div id="customization-panel">
+          <label for="chart-title">Chart Title</label>
+          <input type="text" id="chart-title" placeholder="Enter chart title" />
+          <label for="x-axis">X-Axis Label</label>
+          <input type="text" id="x-axis" placeholder="X-Axis Label" />
+          <label for="y-axis">Y-Axis Label</label>
+          <input type="text" id="y-axis" placeholder="Y-Axis Label" />
+          <label for="color-picker">Choose Colors</label>
+          <input type="color" id="color-picker" />
+        </div>
+      </section>
+
+      <section id="export-section">
+        <button id="export-png">Export PNG</button>
+        <button id="export-svg">Export SVG</button>
+        <button id="export-pdf">Export PDF</button>
+        <button id="print-chart">Print</button>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
