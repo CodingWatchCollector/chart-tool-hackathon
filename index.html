@@ -47,6 +47,14 @@
         <button id="preview-btn" aria-label="Preview Data">Preview Data</button>
       </section>
 
+      <!-- Data Preview Section -->
+      <section id="preview-section" aria-live="polite">
+        <h2>Data Preview</h2>
+        <div id="preview-area">
+          <!-- Table will be dynamically inserted here -->
+        </div>
+      </section>
+
       <section id="visualization-section">
         <div id="chart-controls">
           <label for="chart-type">Select Chart Type</label>
@@ -84,6 +92,14 @@
       </section>
     </main>
 
-    <script src="app.js"></script>
+    <script src="app.js" type="module"></script>
   </body>
+  <template id="table-template">
+    <table>
+      <thead>
+        <tr id="table-header"></tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </template>
 </html>
