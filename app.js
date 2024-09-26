@@ -132,3 +132,78 @@ var showDataPreview = (headers, rows) => {
   // Insert the cloned template content with the populated data into the preview area
   previewArea.replaceChildren(templateContent);
 };
+
+// Function to add labels for the X and Y axes
+var addLabels = (svg, options) => {
+  // Add X-axis label
+  if (options.xLabel) {
+    var xAxisLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    xAxisLabel.setAttribute("x", 250);  // Adjust for the center of the SVG
+    xAxisLabel.setAttribute("y", 420);  // Slightly below the chart
+    xAxisLabel.setAttribute("text-anchor", "middle");
+    xAxisLabel.textContent = options.xLabel;
+    svg.appendChild(xAxisLabel);
+  }
+
+  // Add Y-axis label
+  if (options.yLabel) {
+    var yAxisLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    yAxisLabel.setAttribute("x", -200);  // Positioning for rotated text
+    yAxisLabel.setAttribute("y", 20);    // Slightly to the left of the chart
+    yAxisLabel.setAttribute("transform", "rotate(-90)");  // Rotate to place it vertically
+    yAxisLabel.setAttribute("text-anchor", "middle");
+    yAxisLabel.textContent = options.yLabel;
+    svg.appendChild(yAxisLabel);
+  }
+};
+
+// Function to render a line chart
+var renderLineChart = (data, xKey, yKey, options) => {
+  var svg = createSVGContainer(500, 400);
+
+  // Determine the scaling for X and Y axes
+  var xScale = 500 / (data.length - 1);  // Horizontal distance between points
+  var yMax = Math.max(...data.map(d => d[yKey]));  // Max value for Y-axis scaling
+  // TODO: do we need to sort the data by xKey? If so, how? The data could be of any type (string, number, date, etc.)
+  var yScale = 400 / yMax;
+
+  // Create the path for the line chart
+  var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  var { pathData, dataPoints } = data.reduce((acc, point, i) => {
+    var x = i * xScale;
+    var y = 400 - (point[yKey] * yScale);  // Flip Y-axis to have 0 at the bottom
+
+    acc.pathData += `${i === 0 ? 'M' : 'L'} ${x},${y}`;  // Start with 'M' for move, then 'L' for line
+
+    var circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+
+    circle.setAttribute("cx", x);
+    circle.setAttribute("cy", y);
+    circle.setAttribute("r", 5);
+    circle.setAttribute("fill", options.pointColor || "#FFD700");
+    circle.setAttribute("class", "data-point");
+
+    // Attach data to each point for future interaction (e.g., hover)
+    circle.dataset.xValue = point[xKey];
+    circle.dataset.yValue = point[yKey];
+
+    acc.dataPoints = acc.dataPoints.concat(circle);
+
+    return acc;
+  }, { pathData: '', dataPoints: [] });
+
+  path.setAttribute("d", pathData);
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", options.color || "#003366");
+  path.setAttribute("stroke-width", "2");
+
+  // Accessibility: Add a title and description for screen readers
+  var title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+  title.textContent = options.chartTitle || 'Line Chart';
+
+  svg.append(path, title, ...dataPoints);
+
+  addLabels(svg, options);
+
+  return svg;
+};
