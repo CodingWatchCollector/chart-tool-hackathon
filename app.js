@@ -46,7 +46,6 @@ var processFile = (file) => {
 };
 
 var processCSV = (file) => {
-  console.log('Processing CSV file...', file);
   var reader = new FileReader();
   reader.onload = (event) => {
     var csvData = event.target.result;
@@ -133,6 +132,18 @@ var showDataPreview = (headers, rows) => {
   previewArea.replaceChildren(templateContent);
 };
 
+// Generate SVG inside a container 
+const createSVGWithinAContainer = (container, width, height) => {
+  var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", width);
+  svg.setAttribute("height", height);
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  container.appendChild(svg);
+
+  return svg;
+};
+
+
 // Function to add labels for the X and Y axes
 var addLabels = (svg, options) => {
   // Add X-axis label
@@ -158,8 +169,8 @@ var addLabels = (svg, options) => {
 };
 
 // Function to render a line chart
-var renderLineChart = (data, xKey, yKey, options) => {
-  var svg = createSVGContainer(500, 400);
+var renderLineChart = ({ container, data, xKey, yKey, options }) => {
+  var svg = createSVGWithinAContainer(container, 500, 400);
 
   // Determine the scaling for X and Y axes
   var xScale = 500 / (data.length - 1);  // Horizontal distance between points
@@ -203,6 +214,37 @@ var renderLineChart = (data, xKey, yKey, options) => {
 
   svg.append(path, title, ...dataPoints);
 
+  addLabels(svg, options);
+
+  return svg;
+};
+
+// Function to render a bar chart
+const renderBarChart = ({ container, data, xKey, yKey, options }) => {
+  var svg = createSVGWithinAContainer(container, 500, 400);
+  var barWidth = 500 / data.length;
+  var yMax = Math.max(...data.map(d => d[yKey]));
+  var yScale = 400 / yMax;
+
+  svg.replaceChildren(data.map((point, i) => {
+    var rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    var x = i * barWidth;
+    var y = 400 - (point[yKey] * yScale);
+    var height = point[yKey] * yScale;
+
+    rect.setAttribute("x", x);
+    rect.setAttribute("y", y);
+    rect.setAttribute("width", barWidth - 10);  // Adding some padding between bars
+    rect.setAttribute("height", height);
+    rect.setAttribute("fill", options.barColor || "#0056A2");
+
+    // Tooltip info as data attributes
+    rect.dataset.xValue = point[xKey];
+    rect.dataset.yValue = point[yKey];
+    return rect;
+  }));
+
+  // Reuse the addLabels function for both X and Y labels
   addLabels(svg, options);
 
   return svg;
