@@ -1,7 +1,19 @@
 // File input handling
 var fileInput = document.getElementById('file-input');
 var uploadArea = document.getElementById('upload-area');
+var previewBtn = document.getElementById('preview-btn');
+var generateBtn = document.getElementById('generate-btn');
+var chartType = document.getElementById('chart-type');
+var visualizationArea = document.getElementById('chart-area');
 
+// global variables, use local storage in the future ?
+var processedFileRows;
+var processedFileColumns;
+var lineChartData;
+var barChartData;
+var pieChartData;
+
+// TODO: remove all previous charts on new file upload
 
 // Drag and Drop events
 uploadArea.addEventListener('dragover', (event) => {
@@ -16,14 +28,55 @@ uploadArea.addEventListener('dragleave', () => {
 uploadArea.addEventListener('drop', (event) => {
   event.preventDefault();
   uploadArea.classList.remove('hover');
+  visualizationArea.replaceChildren();
   var file = event.dataTransfer.files[0];
   processFile(file);
 });
 
 // File input change event
 fileInput.addEventListener('change', (event) => {
+  visualizationArea.replaceChildren();
   var file = event.target.files[0];
   processFile(file);
+});
+
+// preview button click event
+previewBtn.addEventListener('click', () => {
+  showDataPreview(processedFileColumns, processedFileRows);
+});
+
+// generate chart button click event
+generateBtn.addEventListener('click', () => {
+  if (!processedFileRows || !processedFileColumns) {
+    alert('Please upload a valid file first.');
+    return;
+  }
+  var chartType = chartType.value;
+  var xKey = processedFileColumns[0];
+  var yKey = processedFileColumns[1];
+
+  var existingCharts = visualizationArea.querySelectorAll(`svg[data-chart-type]`);
+  var currentChart = existingCharts.reduce((found, currentChart) => {
+    !found && currentChart.dataset['chart-type'] === chartType ? (currentChart.removeAttribute('hidden'), currentChart) : (currentChart.setAttribute('hidden', true), null);
+  }, null);
+  if (currentChart) {
+    return;
+  }
+  var container = new DocumentFragment();
+  switch (chartType) {
+    case 'line':
+      renderLineChart({ container, data: processedFileRows, xKey, yKey });
+      break;
+    case 'bar':
+      renderBarChart({ container, data: processedFileRows, xKey, yKey });
+      break;
+    case 'pie':
+      renderPieChart({ container, data: processedFileRows, categoryKey: xKey, valueKey: yKey });
+      break;
+    default:
+      alert('This type of chart is not implemented yet.');
+  }
+  visualizationArea.insertAdjacentElement('afterbegin', container);
 });
 
 // Handle file processing (CSV, JSON, Excel)
@@ -56,7 +109,8 @@ var processCSV = (file) => {
     // TODO: check rows for correct number of columns, error if not
     var rowsAsObjects = rowsAsArray.map(rowRaw => rowRaw.reduce((obj, row, index) => (obj[headers[index]] = row, obj), { ...rowTemplateObj }));
     console.log('CSV data:', rowsAsObjects);
-    showDataPreview(headers, rowsAsObjects);
+    processedFileColumns = headers;
+    processedFileRows = rowsAsObjects;
   };
   reader.readAsText(file);
 };
@@ -69,7 +123,8 @@ var processJSON = (file) => {
       var data = JSON.parse(jsonData);
       var headers = Object.keys(data[0]);
       var rows = data.slice(1);
-      showDataPreview(headers, rows);
+      processedFileColumns = headers;
+      processedFileRows = rows;
     } catch (error) {
       showError('Invalid JSON file. Error: ' + error);
     }
@@ -91,7 +146,8 @@ var processExcel = (file) => {
       var rows = XLSX.utils.sheet_to_json(sheet);
       console.log('row:', rows[0]);
       var headers = Object.keys(rows[0]);
-      showDataPreview(headers, rows);
+      processedFileColumns = headers;
+      processedFileRows = rows;
     });
   };
   reader.readAsArrayBuffer(file);
@@ -133,7 +189,7 @@ var showDataPreview = (headers, rows) => {
 };
 
 // Generate SVG inside a container 
-const createSVGWithinAContainer = (container, width, height) => {
+var createSVGWithinAContainer = (container, width, height) => {
   var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("width", width);
   svg.setAttribute("height", height);
@@ -142,7 +198,6 @@ const createSVGWithinAContainer = (container, width, height) => {
 
   return svg;
 };
-
 
 // Function to add labels for the X and Y axes
 var addLabels = (svg, options) => {
@@ -220,7 +275,7 @@ var renderLineChart = ({ container, data, xKey, yKey, options }) => {
 };
 
 // Function to render a bar chart
-const renderBarChart = ({ container, data, xKey, yKey, options }) => {
+var renderBarChart = ({ container, data, xKey, yKey, options }) => {
   var svg = createSVGWithinAContainer(container, 500, 400);
   var barWidth = 500 / data.length;
   var yMax = Math.max(...data.map(d => d[yKey]));
@@ -245,6 +300,53 @@ const renderBarChart = ({ container, data, xKey, yKey, options }) => {
   }));
 
   // Reuse the addLabels function for both X and Y labels
+  addLabels(svg, options);
+
+  return svg;
+};
+
+// Function to render a pie chart
+var renderPieChart = ({ container, data, categoryKey, valueKey, options }) => {
+  var svgWidth = 500;
+  var svgHeight = 500;
+  var radius = 200;
+  var svg = createSVGWithinAContainer(container, svgWidth, svgHeight);
+  var total = data.reduce((sum, d) => sum + d[valueKey], 0);
+  var cumulativeAngle = 0;
+
+  svg.replaceChildren(data.map((point, i) => {
+    var value = point[valueKey];
+    var sliceAngle = (value / total) * 2 * Math.PI;
+
+    // Calculate slice path
+    var x1 = svgWidth / 2 + radius * Math.cos(cumulativeAngle);
+    var y1 = svgHeight / 2 + radius * Math.sin(cumulativeAngle);
+    var x2 = svgWidth / 2 + radius * Math.cos(cumulativeAngle + sliceAngle);
+    var y2 = svgWidth / 2 + radius * Math.sin(cumulativeAngle + sliceAngle);
+
+    var largeArcFlag = sliceAngle > Math.PI ? 1 : 0;
+
+    var pathData = [
+      `M ${svgWidth / 2} ${svgHeight / 2}`, // Move to center
+      `L ${x1} ${y1}`, // Line to first arc point
+      `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`, // Arc to second arc point
+      `L ${svgWidth / 2} ${svgHeight / 2}` // Line back to center
+    ].join(" ");
+
+    // Create SVG path element for slice
+    var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", pathData);
+    path.setAttribute("fill", options.colors[i % options.colors.length]);
+
+    // Tooltip info as data attributes
+    path.dataset.category = point[categoryKey];
+    path.dataset.value = value;
+
+    cumulativeAngle += sliceAngle;
+    return path;
+  }));
+
+  // Add center text/labels or legend based on options
   addLabels(svg, options);
 
   return svg;
