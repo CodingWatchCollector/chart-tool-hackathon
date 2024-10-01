@@ -30,26 +30,33 @@
 
     <main>
       <section id="upload-section">
-        <h2>Upload your data</h2>
-        <div id="upload-area" role="button" aria-label="File Drag & Drop Area">
-          Drag & Drop your files here or
-          <input
-            type="file"
-            id="file-input"
-            aria-label="Choose File"
-            accept=".csv, .xlsx, .json"
-          />
-        </div>
-        <textarea
-          id="manual-input"
-          placeholder="Or paste your data here (CSV, JSON)"
-        ></textarea>
-        <button id="preview-btn" aria-label="Preview Data">Preview Data</button>
+        <h2>Import your data</h2>
+        <fieldset id="radio-fieldset">
+          <legend>Choose the way to import your data</legend>
+          <div id="drag-n-drop--area" role="button">
+            Drag & Drop your files here
+          </div>
+          <div>
+            <label for="file-input">Or browse for file</label>
+            <input type="file" id="file-input" accept=".csv, .xlsx, .json" />
+          </div>
+          <div>
+            <label for="manual-input">Or manually paste your data</label>
+            <textarea
+              id="manual-input"
+              placeholder="paste your data here (CSV, JSON)"
+            ></textarea>
+            <button type="button" id="manual-input--validate-btn">
+              Validate pasted data
+            </button>
+          </div>
+        </fieldset>
       </section>
 
       <!-- Data Preview Section -->
       <section id="preview-section" aria-live="polite">
         <h2>Data Preview</h2>
+        <button id="preview-btn" aria-label="Preview Data">Preview Data</button>
         <div id="preview-area">
           <!-- Table will be dynamically inserted here -->
         </div>

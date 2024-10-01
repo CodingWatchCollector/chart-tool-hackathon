@@ -1,12 +1,15 @@
 // File input handling
 var fileInput = document.getElementById('file-input');
-var uploadArea = document.getElementById('upload-area');
+var uploadArea = document.getElementById('drag-n-drop--area');
+var manualInput = document.getElementById('manual-input');
+var manualInputValidationBtn = document.getElementById('manual-input--validate-btn');
 var previewBtn = document.getElementById('preview-btn');
 var generateBtn = document.getElementById('generate-btn');
 var chartType = document.getElementById('chart-type');
 var visualizationArea = document.getElementById('chart-area');
+var previewArea = document.getElementById('preview-area');
 
-// global variables, use local storage in the future ?
+// Global variables, use local storage in the future ?
 var processedFileRows;
 var processedFileColumns;
 var lineChartData;
@@ -14,10 +17,14 @@ var barChartData;
 var pieChartData;
 
 // TODO: remove all previous charts on new file upload
+var onTransformedDataChange = () => {
+  processedFileColumns = null;
+  processedFileRows = null;
+  previewArea.replaceChildren();
+};
 
 // Drag and Drop events
 uploadArea.addEventListener('dragover', (event) => {
-  event.preventDefault();
   uploadArea.classList.add('hover');
 });
 
@@ -26,23 +33,41 @@ uploadArea.addEventListener('dragleave', () => {
 });
 
 uploadArea.addEventListener('drop', (event) => {
-  event.preventDefault();
   uploadArea.classList.remove('hover');
-  visualizationArea.replaceChildren();
-  var file = event.dataTransfer.files[0];
-  processFile(file);
+  onTransformedDataChange();
+  processFile(event.dataTransfer.files[0]);
 });
 
 // File input change event
 fileInput.addEventListener('change', (event) => {
-  visualizationArea.replaceChildren();
+  onTransformedDataChange();
   var file = event.target.files[0];
   processFile(file);
 });
 
+manualInputValidationBtn.addEventListener('click', () => {
+  onTransformedDataChange();
+  var transformedData = manualInput.value.trim();
+  try {
+    processJSON(transformedData);
+  } catch (error) {
+    try {
+      processCSV(transformedData);
+      return;
+    } catch (csvError) {
+      showError(`Invalid file. \nCSV error: ${csvError.message} \nJSON error: ${error.message}`);
+      return;
+    }
+  }
+});
+
 // preview button click event
 previewBtn.addEventListener('click', () => {
-  showDataPreview(processedFileColumns, processedFileRows);
+  if (processedFileColumns, processedFileRows) {
+    showDataPreview(processedFileColumns, processedFileRows);
+  } else {
+    showError('Please upload a valid file first.');
+  }
 });
 
 // generate chart button click event
@@ -82,75 +107,59 @@ generateBtn.addEventListener('click', () => {
 // Handle file processing (CSV, JSON, Excel)
 var processFile = (file) => {
   var fileType = file.type;
-
-  switch (fileType) {
-    case 'text/csv':
-      processCSV(file);
-      break;
-    case 'application/json':
-      processJSON(file);
-      break;
-    case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-      processExcel(file);
-      break;
-    default:
-      showError('Unsupported file type. Please upload a CSV, JSON, or Excel file.');
+  var reader = new FileReader();
+  try {
+    switch (fileType) {
+      case 'text/csv':
+        reader.onload = (event) => processCSV(event.target.result);
+        reader.readAsText(file);
+        break;
+      case 'application/json':
+        reader.onload = (event) => processJSON(event.target.result);
+        reader.readAsText(file);
+        break;
+      case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+        reader.onload = (event) => processExcel(event.target.result);
+        reader.readAsArrayBuffer(file);
+        break;
+      default:
+        showError('Unsupported file type. Please upload a CSV, JSON, or Excel file.');
+    }
+  } catch (error) {
+    showError('Error while processing file. Please upload a valid file.', error);
   }
 };
 
-var processCSV = (file) => {
-  var reader = new FileReader();
-  reader.onload = (event) => {
-    var csvData = event.target.result;
-    var data = csvData.split('\n');
-    var headers = data[0].split(',');
-    var rowTemplateObj = headers.reduce((obj, header) => (obj[header] = '', obj), {});
-    var rowsAsArray = (data.at(-1).trim() === '' ? data.slice(1, -1) : data.slice(1)).map(row => row.split(','));
-    // TODO: check rows for correct number of columns, error if not
-    var rowsAsObjects = rowsAsArray.map(rowRaw => rowRaw.reduce((obj, row, index) => (obj[headers[index]] = row, obj), { ...rowTemplateObj }));
-    console.log('CSV data:', rowsAsObjects);
+var processCSV = (csvData) => {
+  var data = csvData.split('\n');
+  var headers = data[0].split(',');
+  var rowTemplateObj = headers.reduce((obj, header) => (obj[header] = '', obj), {});
+  var rowsAsArray = (data.at(-1).trim() === '' ? data.slice(1, -1) : data.slice(1)).map(row => row.split(','));
+  // TODO: check rows for correct number of columns, error if not
+  var rowsAsObjects = rowsAsArray.map(rowRaw => rowRaw.reduce((obj, row, index) => (obj[headers[index]] = row, obj), { ...rowTemplateObj }));
+  processedFileColumns = headers;
+  processedFileRows = rowsAsObjects;
+};
+
+var processJSON = (jsonData) => {
+  var data = JSON.parse(jsonData);
+  var headers = Object.keys(data[0]);
+  var rows = data.slice(1);
+  processedFileColumns = headers;
+  processedFileRows = rows;
+};
+
+// TODO: hardcoded first sheet for now, change to user-selected sheet
+var processExcel = (excelData) => {
+  import('./xlsx.min.js').then(() => {
+    var workbook = XLSX.read(excelData, { type: 'binary' });
+    var sheetName = workbook.SheetNames[0];
+    var sheet = workbook.Sheets[sheetName];
+    var rows = XLSX.utils.sheet_to_json(sheet);
+    var headers = Object.keys(rows[0]);
     processedFileColumns = headers;
-    processedFileRows = rowsAsObjects;
-  };
-  reader.readAsText(file);
-};
-
-var processJSON = (file) => {
-  var reader = new FileReader();
-  reader.onload = (event) => {
-    var jsonData = event.target.result;
-    try {
-      var data = JSON.parse(jsonData);
-      var headers = Object.keys(data[0]);
-      var rows = data.slice(1);
-      processedFileColumns = headers;
-      processedFileRows = rows;
-    } catch (error) {
-      showError('Invalid JSON file. Error: ' + error);
-    }
-  };
-  reader.readAsText(file);
-};
-
-var processExcel = (file) => {
-  var reader = new FileReader();
-  reader.onload = (event) => {
-    var excelData = event.target.result;
-    import('./xlsx.min.js').then(() => {
-      var workbook = XLSX.read(excelData, { type: 'binary' });
-      console.log('workbook:', workbook);
-      var sheetName = workbook.SheetNames[6];
-      console.log('sheetName:', sheetName);
-      var sheet = workbook.Sheets[sheetName];
-      console.log('sheet:', sheet);
-      var rows = XLSX.utils.sheet_to_json(sheet);
-      console.log('row:', rows[0]);
-      var headers = Object.keys(rows[0]);
-      processedFileColumns = headers;
-      processedFileRows = rows;
-    });
-  };
-  reader.readAsArrayBuffer(file);
+    processedFileRows = rows;
+  });
 };
 
 var showError = (message) => {
@@ -159,7 +168,6 @@ var showError = (message) => {
 
 // Display Data Preview using rows and headers
 var showDataPreview = (headers, rows) => {
-  var previewArea = document.getElementById('preview-area');
 
   if (rows.length === 0 || headers.length === 0) {
     showError('No data to preview.');
