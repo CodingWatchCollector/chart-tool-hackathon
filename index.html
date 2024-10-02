@@ -7,9 +7,9 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <header>
+    <header class="container flex f-wrap">
       <h1>Data Visualization Tool</h1>
-      <label for="theme-toggle">
+      <label for="theme-toggle" class="flex align-center gap">
         <svg
           aria-hidden="true"
           xmlns="http://www.w3.org/2000/svg"
@@ -23,24 +23,24 @@
             d="M20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69zm-2 5.79V18h-3.52L12 20.48 9.52 18H6v-3.52L3.52 12 6 9.52V6h3.52L12 3.52 14.48 6H18v3.52L20.48 12 18 14.48zM12 6.5v11c3.03 0 5.5-2.47 5.5-5.5S15.03 6.5 12 6.5z"
           />
         </svg>
-        Toggle dark mode</label
-      >
-      <input type="checkbox" id="theme-toggle" />
+        Toggle dark mode
+        <input type="checkbox" id="theme-toggle" />
+      </label>
     </header>
 
-    <main>
-      <section id="upload-section">
+    <main class="stack stack-large container">
+      <section id="upload-section" class="stack stack-base">
         <h2>Import your data</h2>
-        <fieldset id="radio-fieldset">
+        <fieldset id="radio-fieldset" class="stack stack-base">
           <legend>Choose the way to import your data</legend>
-          <div id="drag-n-drop--area" role="button">
+          <div id="drag-n-drop--area" role="button" class="drag-n-drop-area">
             Drag & Drop your files here
           </div>
-          <div>
+          <div class="stack stack-small">
             <label for="file-input">Or browse for file</label>
             <input type="file" id="file-input" accept=".csv, .xlsx, .json" />
           </div>
-          <div>
+          <div class="stack stack-small">
             <label for="manual-input">Or manually paste your data</label>
             <textarea
               id="manual-input"
@@ -53,33 +53,36 @@
         </fieldset>
       </section>
 
-      <!-- Data Preview Section -->
-      <section id="preview-section" aria-live="polite">
+      <section id="preview-section" aria-live="polite" class="stack stack-base">
         <h2>Data Preview</h2>
         <button id="preview-btn" aria-label="Preview Data">Preview Data</button>
-        <div id="preview-area">
-          <!-- Table will be dynamically inserted here -->
-        </div>
+        <div
+          id="preview-area"
+          role="region"
+          aria-labelledby="Caption01"
+          tabindex="0"
+        ></div>
       </section>
 
-      <section id="visualization-section">
-        <div id="chart-controls">
-          <label for="chart-type">Select Chart Type</label>
-          <select id="chart-type">
-            <option value="line">Line Chart</option>
-            <option value="bar">Bar Chart</option>
-            <option value="pie">Pie Chart</option>
-          </select>
+      <section id="visualization-section" class="stack stack-base">
+        <h2>Visualization</h2>
+        <div id="chart-controls" class="stack stack-base">
+          <div class="stack stack-small">
+            <label for="chart-type">Select Chart Type</label>
+            <select id="chart-type">
+              <option value="line">Line Chart</option>
+              <option value="bar">Bar Chart</option>
+              <option value="pie">Pie Chart</option>
+            </select>
+          </div>
           <button id="generate-btn" aria-label="Generate Chart">
             Generate Chart
           </button>
         </div>
+        <div id="chart-area" aria-live="polite"></div>
 
-        <div id="chart-area" aria-live="polite">
-          <!-- SVG chart will be rendered here -->
-        </div>
-
-        <div id="customization-panel">
+        <!-- TODO: add customization (labels/colors/legend) to chart options -->
+        <!-- <div id="customization-panel">
           <label for="chart-title">Chart Title</label>
           <input type="text" id="chart-title" placeholder="Enter chart title" />
           <label for="x-axis">X-Axis Label</label>
@@ -88,14 +91,17 @@
           <input type="text" id="y-axis" placeholder="Y-Axis Label" />
           <label for="color-picker">Choose Colors</label>
           <input type="color" id="color-picker" />
-        </div>
+        </div> -->
       </section>
 
-      <section id="export-section">
-        <button id="export-png">Export PNG</button>
-        <button id="export-svg">Export SVG</button>
-        <button id="export-pdf">Export PDF</button>
-        <button id="print-chart">Print</button>
+      <section id="export-section" class="stack stack-base">
+        <h2>Export data</h2>
+        <div class="cluster">
+          <button id="export-png">Export PNG</button>
+          <button id="export-svg">Export SVG</button>
+          <button id="export-pdf">Export PDF</button>
+          <button id="print-chart">Print</button>
+        </div>
       </section>
     </main>
 
@@ -103,6 +109,9 @@
   </body>
   <template id="table-template">
     <table>
+      <caption id="Caption01">
+        Uploaded data preview
+      </caption>
       <thead>
         <tr id="table-header"></tr>
       </thead>
